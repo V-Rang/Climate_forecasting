@@ -75,5 +75,6 @@ axs.set_title("k-means Clustering with 5 centers")
 plt.savefig('u10m_lat_range_30_20_long_range_260_275_time_5days_5_centers.png')
 plt.show()
 
+np.save('labels_lat_range_30_20_long_range_260_275_time_5days_5_centers.npy', grid_labels)
 
 
