@@ -19,10 +19,9 @@ class DatasetCreate(Dataset):
     latitude_range: list, 
     longitude_range: list,
     seq_len: int,
-    pred_len: int,
-    flag = 'train') -> np.array:
+    pred_len: int) -> np.array:
         
-        assert(flag == 'train' or flag == 'test')
+        # assert(flag == 'train' or flag == 'test' or flag == 'val')
         self.seq_len = seq_len
         self.pred_len = pred_len
         
@@ -37,25 +36,25 @@ class DatasetCreate(Dataset):
             data_var = data_var.sel(latitude = slice(*latitude_range), longitude = slice(*longitude_range))
             self.data_total.append(data_var)
         
-        type_map = {'train':0, 'test': 1}
-        self.set_type = type_map[flag]
+        # type_map = {'train':0, 'test': 1, 'val' : 2}
+        # self.set_type = type_map[flag]
         
         self.__read_data__()
     
     def __read_data__(self):
-        len_dataset = self.data_total[0].shape[0] #total no. of time instances
-        n_train = int(0.8 * len_dataset)
-        glb_start_indices = [0, n_train]
-        glb_end_indices = [n_train, len_dataset]
-        
-        loc_index_range = [glb_start_indices[self.set_type], glb_end_indices[self.set_type]]
+        # len_dataset = self.data_total[0].shape[0] #total no. of time instances
+        # n_train = int(0.8 * len_dataset)
+        # glb_start_indices = [0, n_train]
+        # glb_end_indices = [n_train, len_dataset]
+        # loc_index_range = [glb_start_indices[self.set_type], glb_end_indices[self.set_type]]
         
         # data for all vars. corresp. to flag (train OR test only.)
         self.data_x = []
         
         for i in range(len(self.data_total)): #i.e. corresp. to each variable in variables_list.
-            self.data_x.append(self.data_total[i][loc_index_range[0] : loc_index_range[1]])
-                
+            # self.data_x.append(self.data_total[i][loc_index_range[0] : loc_index_range[1]])
+            self.data_x.append(self.data_total[i][:])
+        
     def __len__(self):
         return self.data_x[0].shape[0] - self.seq_len - self.pred_len + 1
         
