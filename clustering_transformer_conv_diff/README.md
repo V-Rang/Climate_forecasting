@@ -1,0 +1,1 @@
+use "../data_gen_CD.py" to get snapshots for the clustered attention transformer. 
