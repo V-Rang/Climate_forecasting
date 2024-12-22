@@ -18,12 +18,11 @@ Lx, Ly = 1.0, 1.0  # Domain size
 Nx, Ny = 48, 48  # Grid points
 dx, dy = Lx /(Nx-1), Ly /(Ny - 1)  # Grid spacing
 
-# Nt = 400
-# dt = 5e-4
+# Nt = 500
+# dt = 5e-3
 
-Nt = 500
-dt = 5e-3
-
+Nt = 999
+dt = 25e-4
 
 c1 = 1e-1 # high => more shock
 c2 = 1e-2 # low => more shock
@@ -133,6 +132,9 @@ print("Number of modes for 95% energy:", np.searchsorted(cumulative_energy, 0.95
 
 # # make movie
 test_arr = snapshots.T
+np.save('snapshots_CD.npy', test_arr)
+print(test_arr.shape)
+
 test_arr = test_arr.reshape(test_arr.shape[0], Ny, Nx)
 fig, ax = plt.subplots(figsize=(6, 6))
 im = ax.imshow(test_arr[0], cmap="viridis", interpolation="nearest")
@@ -148,5 +150,3 @@ def update(frame):
 ani = FuncAnimation(fig, update, frames=range(test_arr.shape[0]), interval=50, blit=True)
 ani.save("movie_cd.mp4", writer="ffmpeg", fps=20)
 plt.close(fig)
-np.save('snapshots_CD.npy', snapshots)
-
