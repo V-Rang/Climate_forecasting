@@ -7,6 +7,7 @@ import os
 import time
 import numpy as np
 from utils.tools import EarlyStopping, adjust_learning_rate
+from utils.metrics import metric
 
 class Exp(object):
     def __init__(self, setting):
@@ -115,18 +116,20 @@ class Exp(object):
                     iteration_count = 0
                     time_now = time.time()
 
-                speed = (time.time() - time_now) / iteration_count
                 loss.backward()
                 model_optim.step()
-                break
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))            
             train_loss = np.average(train_loss)
             validation_loss = self.validation(validation_data, validation_loader, loss_criterion)
-            test_loss = self.validation(test_data, test_loader, loss_criterion)
+            # test_loss = self.validation(test_data, test_loader, loss_criterion)
 
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Val Loss: {3:.7f} Test Loss: {4:.7f}".format(
-                epoch + 1, train_steps, train_loss, validation_loss, test_loss))
+            # print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Val Loss: {3:.7f} Test Loss: {4:.7f}".format(
+            #     epoch + 1, train_steps, train_loss, validation_loss, test_loss))
+            
+            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Val Loss: {3:.7f}".format(
+                epoch + 1, train_steps, train_loss, validation_loss))
+            
             early_stopping(validation_loss, self.model, path)
             
             if early_stopping.early_stop:
@@ -139,4 +142,40 @@ class Exp(object):
         self.model.load_state_dict(torch.load(best_model_path))
         return self.model
 
+    def test(self, exp_name):
+        test_data, test_loader = self._get_data(flag = 'test')
+        print('loading model')
+        self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + exp_name, 'checkpoint.pth')))
 
+        preds = []
+        trues = []
+        folder_path = './test_results/' + exp_name + '/'
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        self.model.eval()
+        with torch.no_grad():
+            for i, (input_arr, output_arr) in enumerate(test_loader):
+                input_arr = input_arr.float()
+                output_arr = output_arr.float()
+                
+                pred_output = self.model(input_arr) 
+                preds.append(pred_output)
+                trues.append(output_arr)
+                
+        preds = np.array(preds)
+        trus = np.array(trues)
+
+        # mae, mse, rmse, mape, mspe = metric(preds, trues)
+        # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe]))
+
+        mae, mse, rmse = metric(preds, trues)
+        np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse]))
+
+        print(folder_path)
+        np.save(folder_path + 'pred.npy', preds)
+        np.save(folder_path + 'true.npy', trues)
+
+        return 
+
+            
