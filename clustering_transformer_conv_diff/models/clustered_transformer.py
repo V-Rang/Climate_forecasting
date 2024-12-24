@@ -17,7 +17,7 @@ class Model(nn.Module):
         self.d_model = model_settings['d_model']
         self.e_layers = model_settings['e_layers']
         self.norm_flag = model_settings['norm_flag']
-         
+        self.device = model_settings['device']
         self.attention = ClusteredAttention(output_attention=True)
         
         self.encod_embedding = TseriesEmbed(self.seq_len, self.d_model)
@@ -59,6 +59,7 @@ class Model(nn.Module):
 
         # labels = ClusterDetermine(input_arr.reshape(bsize, num_vars * seq_len, num_lats * num_lons).permute((0, 2, 1))) 
         labels = ClusterDetermine(input_arr) #(b, l)
+        labels = labels.to(self.device) # move to gpu.
 
         if self.norm_flag  == 'batch':
             means = input_arr.mean((0,2), keepdim = True).detach() # (1,l,1)
@@ -97,9 +98,9 @@ class Model(nn.Module):
             dec_out += means
         
         dec_out = dec_out.permute(0,2, 1) # (b, p, l)
+
         
         # dec_out = dec_out.reshape((list(dec_out.shape[:-1]) + [num_lats, num_lons]   )) # (b, v, p, la, lo)
-        
         return dec_out # (b, p, l)
 
         # dummy output to get code to run for now.

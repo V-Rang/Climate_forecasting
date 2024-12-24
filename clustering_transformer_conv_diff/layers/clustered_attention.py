@@ -24,11 +24,18 @@ class ClusteredAttention(nn.Module):
         scores = torch.einsum("ble,bse->bls", query, key)
         
         # applying mask.
+        mask = label_arr[:, :, None] != label_arr[:, None, :] 
+        scores[mask] = float('-inf')
 
         A = self.dropout(torch.softmax(scale * scores, dim=-1))
 
         V = torch.einsum("bls,bsd->bld", A, value)
 
+        # test_attenion_scores = A.detach().cpu().numpy()
+        # test_label_arr = label_arr.detach().cpu().numpy()
+        # np.save('test_label_arr.npy', test_label_arr)
+        # np.save('test_attention_scores.npy', test_attenion_scores)
+        
         # V = ( value.unsqueeze(2) * A.permute(0,3,2,1).transpose(-1, -2).unsqueeze(-1)).permute(0,2,1,3,4) # (b, l, l, v, s)
         # V = V.sum(dim = 2) # (b, l, l, v, s) -> (b, l, v, s)
         # ( b,l,v,s) can be added to the query (b, l, v, s).
