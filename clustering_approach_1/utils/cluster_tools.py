@@ -17,7 +17,7 @@ def ClusterDetermine(in_arr : torch.tensor) -> torch.tensor:
     other clustering methods.
     '''
 
-    in_arr = in_arr.detach().numpy()
+    in_arr = in_arr.cpu().detach().numpy()
     k = 5
     scaler = StandardScaler()
     labels = np.zeros((in_arr.shape[0], in_arr.shape[1]), dtype = int)

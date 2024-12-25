@@ -28,16 +28,20 @@ class ClusteredAttention(nn.Module):
 
         sum_tot_vec = key.sum(dim = 2)  # Summing over the `k1` dimension, Shape: (b, l, s)
 
+        # ***************************************        
+        # scores = torch.randn((b, l, v, l), device=query.device)
+        # scores = torch.einsum('', query, sum_tot_vec)
+
         scores = -torch.inf * torch.ones((b, l, v, l), device=query.device)
-        
         for k in range(v): # 3 variables only for now.
             q1 = query[:,:,k,:].unsqueeze(2)
             q2 = sum_tot_vec.unsqueeze(1).transpose(-1, -2).squeeze(2)
             q3 = (q1 @ q2).squeeze(2)
             scores[:,:,k, :] = torch.where(label_mask, q3, scores[:, :, k, :])
-
-        A = self.dropout(torch.softmax(scale * scores, dim=-1))
-
+        # ***************************************        
+        
+        A = self.dropout(torch.softmax(scale * scores, dim=-1)) #gpu
+        # print(A.get_device(), ":", query.get_device())
         # A: (b, l, v, l) l_1 -> queries, l_3 -> keys
         # values: (b, l, v, s) 
 
@@ -45,9 +49,12 @@ class ClusteredAttention(nn.Module):
         # A -> (b,l,v,l) -> (b, l, l, v) -> (b,l, l, v, 1)
         # V -> (b, l, l, v, s) l_1 -> key, l_2 -> query
 
+        # ***************************************        
         V = ( value.unsqueeze(2) * A.permute(0,3,2,1).transpose(-1, -2).unsqueeze(-1)).permute(0,2,1,3,4) # (b, l, l, v, s)
-        V = V.sum(dim = 2) # (b, l, l, v, s) -> (b, l, v, s)
+        V = V.sum(dim = 2) # (b, l, l, v, s) -> (b, l, v, s) 
         # (b,l,v,s) can be added to the query (b, l, v, s).
+        # ***************************************        
+        # V = torch.randn((b,l,v,s), device = query.device)
 
         if self.output_attention:
             return (V.contiguous(), A)
