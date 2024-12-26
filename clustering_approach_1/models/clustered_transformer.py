@@ -101,6 +101,10 @@ class Model(nn.Module):
         # del_x, scores = self.attention(input_arr, input_arr, input_arr, labels)                
         # stime = time.time()
         encode_out, attention_vals = self.encoder(encode_out, labels)
+
+        labels = labels.cpu()
+        del labels
+
         # etime = time.time()
         # print('encoder time = ', etime - stime,)
 
@@ -124,7 +128,7 @@ class Model(nn.Module):
         
         # etime = time.time()
         # print('dec time = ', etime - stime)
-
+        
         return dec_out # (b, l, v, p)
 
         # dummy output to get code to run for now.

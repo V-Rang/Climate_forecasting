@@ -27,6 +27,10 @@ class EncoderLayer(nn.Module):
         )
 
         x = x + self.dropout(new_x)
+        #gpu memory purposes:
+        new_x = new_x.cpu()
+        del new_x
+
         y = x = self.norm1(x) #(b, l, v, d_model)
         y = self.dropout(self.activation(self.conv1(y.permute(0,3,1,2))))
         y = self.dropout(self.conv2(y).permute(0,2,3,1))

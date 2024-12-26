@@ -72,7 +72,7 @@ class DatasetCreate(Dataset):
         # return (l,v,s) and (l,v,p).
 
         return self.data_total[:, :, inp_start_index: inp_end_index], self.data_total[:, :, out_start_index: out_end_index] 
-        
+            
         # inp, out = self.data_total[:, :, inp_start_index: inp_end_index], self.data_total[:, :, out_start_index: out_end_index] 
         # print(inp.shape,":", out.shape)
         # return inp, out

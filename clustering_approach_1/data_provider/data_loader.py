@@ -31,7 +31,6 @@ def DataLoaderCreate(settings, flag):
             settings['seq_len'],
             settings['pred_len'])
  
-
     else: # train
         shuffle_flag = True
         drop_last = True

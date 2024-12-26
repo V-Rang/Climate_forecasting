@@ -28,7 +28,7 @@ class Exp(object):
         }
 
         self.model = self.model_dict[self.setting['model_type']].Model(model_params)
-        self.model = self.model.to(self.device)
+        self.model = self.model.to(self.device) #moving model to gpu.
 
     def _select_criterion(self):
         criterion = nn.MSELoss()
@@ -56,6 +56,11 @@ class Exp(object):
 
                 loss = criterion(prediction, ground_truth)
                 total_loss.append(loss) 
+
+                input_arr = input_arr.cpu()
+                output_arr = output_arr.cpu() 
+                del input_arr, output_arr
+
         
         total_loss = np.average(total_loss)
         self.model.train()
@@ -154,6 +159,11 @@ class Exp(object):
 
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
+
+        input_arr = input_arr.cpu()
+        output_arr = output_arr.cpu() 
+        del input_arr, output_arr
+
         return self.model
 
     def test(self, exp_name):
@@ -180,6 +190,10 @@ class Exp(object):
             
                 preds.append(pred_output)
                 trues.append(output_arr)
+                
+                input_arr = input_arr.cpu()
+                output_arr = output_arr.cpu() 
+                del input_arr, output_arr
                 
         preds = np.array(preds)
         trues = np.array(trues)
