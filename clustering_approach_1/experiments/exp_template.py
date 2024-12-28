@@ -70,7 +70,8 @@ class Exp(object):
         train_data, train_loader = self._get_data(flag = 'train')
         validation_data, validation_loader = self._get_data(flag = 'val')
         test_data, test_loader = self._get_data(flag = 'test')
-
+        
+        print(len(train_data), len(validation_data), len(test_data))
         # for _, (input_arr, output_arr) in enumerate(train_loader):
         #     print(input_arr.shape, ":", output_arr.shape)
         #     break
@@ -83,7 +84,8 @@ class Exp(object):
         #     print(input_arr.shape, ":", output_arr.shape)
         #     break
 
-        # print(train_data.data.shape, ":", test_data.data.shape, ":", validation_data.data.shape)
+
+        return 
 
         path = os.path.join(self.setting['checkpoints'], exp_name )
         if not os.path.exists(path):
@@ -154,7 +156,6 @@ class Exp(object):
                 print("Early stopping")
                 break
         
-
             adjust_learning_rate(model_optim, epoch + 1, self.setting)
 
         best_model_path = path + '/' + 'checkpoint.pth'

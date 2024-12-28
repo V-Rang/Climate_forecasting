@@ -24,7 +24,7 @@ class ClusteredAttention(nn.Module):
 
         # scores = torch.zeros((b, l, v, l))
 
-        label_mask = label_arr.unsqueeze(2) == label_arr.unsqueeze(1)  # Shape: (b, l, l)
+        # label_mask = label_arr.unsqueeze(2) == label_arr.unsqueeze(1)  # Shape: (b, l, l)
 
         sum_tot_vec = key.sum(dim = 2)  # Summing over the `k1` dimension, Shape: (b, l, s)
 
@@ -52,8 +52,8 @@ class ClusteredAttention(nn.Module):
         query = query.cpu()
         del query
 
-        label_mask = label_mask.cpu()
-        del label_mask
+        # label_mask = label_mask.cpu()
+        # del label_mask
 
         sum_tot_vec = sum_tot_vec.cpu()
         del sum_tot_vec

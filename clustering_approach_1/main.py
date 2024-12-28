@@ -17,9 +17,9 @@ from experiments.exp_template import Exp
 input_settings = {}
 input_settings['model_type'] = 'clustered_transformer'
 input_settings['obs_path'] = "gs://weatherbench2/datasets/era5/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2/"
-input_settings['training_period'] = ['2019-01-01T00:00:00.000000000', '2019-01-10T23:00:00.000000000'] # 240 total instances.
-input_settings['testing_period'] = ['2019-02-01T00:00:00.000000000', '2019-02-05T23:00:00.000000000'] 
-input_settings['validation_period'] = ['2019-01-20T00:00:00.000000000', '2019-01-24T23:00:00.000000000'] 
+input_settings['training_period'] = ['2019-01-01T00:00:00.000000000', '2019-02-05T23:00:00.000000000'] # 240 total instances.
+input_settings['testing_period'] = ['2019-02-10T00:00:00.000000000', '2019-02-14T23:00:00.000000000'] 
+input_settings['validation_period'] = ['2019-03-20T00:00:00.000000000', '2019-03-24T23:00:00.000000000'] 
 input_settings['lat_range'] = [30., 20.] # only focus on NA region # 41
 input_settings['long_range'] = [260, 275] # ideal for East Coast # 61
 input_settings['variables_list'] = ['10m_u_component_of_wind', '10m_v_component_of_wind', '2m_temperature']
@@ -36,6 +36,7 @@ input_settings['checkpoints'] = './checkpoints/' # model checkpoint locations
 # post which the model training for the current epoch will be stopped
 # done to prevent overfitting on training data.
 input_settings['patience'] = 3 
+input_settings['time_enc'] = 0 # 0 or 1.    
 
 # the model will take in (b, l, v, s) shaped input.
 # three choices:
@@ -73,6 +74,13 @@ exp_name = '{}_{}-la_{}-{}-lo_{}-{}-nv-{}-sl{}-dm{}-pl{}-bs{}-ne{}-lr{}-el{}'.fo
     input_settings['learning_rate'],
     input_settings['e_layers'],   
 )
+
+
+#look into this, what does this do?
+# fix_seed = 2023
+# random.seed(fix_seed)
+# torch.manual_seed(fix_seed)
+# np.random.seed(fix_seed)
 
 exp.train(exp_name)
 exp.test(exp_name)
