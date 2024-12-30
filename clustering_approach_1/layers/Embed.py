@@ -7,10 +7,25 @@ class TseriesEmbed(nn.Module):
         super(TseriesEmbed, self).__init__()
         self.embed_layer = nn.Linear(seq_len, d_model, bias = False)
     
-    def forward(self, x):
+    def forward(self, x, x_enc):
+        
         '''
         x -> b l v s
+        x_enc -> b 4 v s
         output -> b l v d_model
         '''
-        return self.embed_layer(x)
+
+        # test_arr = torch.zeros(len(x_enc[0]), dtype = x_enc[0].dtype).to(x_enc.device)
+        test_arr = torch.zeros_like(x_enc[0]).to(x_enc.device)        
+        if (torch.allclose(x_enc[0], test_arr)): # no time encoding
+            x = self.embed_layer(x) # (b,l, v, d_model)
+        else:
+            '''
+            x -> (b, l, v, s)
+            x_enc -> (b, 4, v, s)
+            concatenate: (b, l+4, v, s)
+            '''
+            x = self.embed_layer(torch.cat([x, x_enc], axis = 1)) #(b, l+4, v, d_model)        
+
+        return x
 

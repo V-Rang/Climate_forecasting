@@ -15,11 +15,11 @@ class EncoderLayer(nn.Module):
 
     def forward(self, x, label_arr):
         '''
-        x -> b,l,v, d_model
+        x -> b,l,v, d_model or b, l+4, v, d_model
         label_arr -> b,l
         
         output:
-        b,l,v, d_model
+        b,l,v, d_model or b,l+4, v, d_model
         '''
         
         new_x, attention = self.attention(

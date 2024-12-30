@@ -5,18 +5,19 @@ from math import sqrt
 import time
 
 class ClusteredAttention(nn.Module):
-    def __init__(self, scale = None, attention_dropout = 0.1, output_attention = False ):
+    def __init__(self, scale = None, attention_dropout = 0.1, output_attention = False, time_enc = 0):
         super(ClusteredAttention, self).__init__()
         self.dropout = nn.Dropout(attention_dropout)
         self.output_attention = output_attention
         self.scale = scale
+        self.time_enc = time_enc
 
     def forward(self, query: torch.tensor, key: torch.tensor, value: torch.tensor, label_arr: np.array) -> torch.tensor:        
         
         '''
-        query, key, value: (b, l, v, s) 
+        query, key, value: (b, l, v, d_model) or (b, l+4, v, d_model) (if time_enc.) 
         label_arr -> (b, l)
-        scores -> (b, l, v, l)
+        scores -> (b, l, v, l) or (b, l+4, v, l+4) (time_enc = 1).
         '''
 
         b, l, v, s  = query.shape
@@ -24,7 +25,13 @@ class ClusteredAttention(nn.Module):
 
         # scores = torch.zeros((b, l, v, l))
 
-        # label_mask = label_arr.unsqueeze(2) == label_arr.unsqueeze(1)  # Shape: (b, l, l)
+        label_mask = label_arr.unsqueeze(2) == label_arr.unsqueeze(1)  # Shape: (b, l, l)
+        # if time_enc: label_mask: (b, l, l) -> (b, l+4, l+4)
+        if self.time_enc:
+            time_enc_mask = torch.ones((b,4,label_arr.shape[1]), dtype=torch.bool, device = query.device) #(b, 4, l)
+            label_mask = torch.cat((label_mask, time_enc_mask), dim = 1) # (b, l+4, l)
+            time_enc_mask = torch.ones((b,label_arr.shape[1]+4, 4), dtype=torch.bool, device = query.device) #(b, l+4, 4)
+            label_mask = torch.cat((label_mask, time_enc_mask), dim = 2) # (b, l + 4, l + 4)
 
         sum_tot_vec = key.sum(dim = 2)  # Summing over the `k1` dimension, Shape: (b, l, s)
 
@@ -35,17 +42,23 @@ class ClusteredAttention(nn.Module):
         # scores = torch.randn((b, l, v, l), device=query.device)
         # scores = torch.einsum('', query, sum_tot_vec)
 
-        # scores = -torch.inf * torch.ones((b, l, v, l), device=query.device)
-        scores = torch.zeros((b, l, v, l), device=query.device)
+        scores = -torch.inf * torch.ones((b, l, v, l), device=query.device)
+
         for k in range(v): # 3 variables only for now.
             # q1 = query[:,:,k,:].unsqueeze(2)
             # q2 = sum_tot_vec.unsqueeze(1).transpose(-1, -2)
             # q2 = sum_tot_vec.unsqueeze(1).transpose(-1, -2).squeeze(2)
             # q3 = (query[:,:,k,:].unsqueeze(2) @ sum_tot_vec.unsqueeze(1).transpose(-1, -2)).squeeze(2)
             # scores[:,:,k, :] = q3   
-            scores[:,:,k, :] = (query[:,:,k,:].unsqueeze(2) @ sum_tot_vec.unsqueeze(1).transpose(-1, -2)).squeeze(2)
 
-            # scores[:,:,k, :] = torch.where(label_mask, q3, scores[:, :, k, :])
+            # w/o attention- remove mask code above loop.
+            # q3 = (query[:,:,k,:].unsqueeze(2) @ sum_tot_vec.unsqueeze(1).transpose(-1, -2)).squeeze(2) # (b,l,l) or (b,l +4, l+4)
+            # scores[:,:,k, :] = q3
+
+            # with attention:
+            q3 = (query[:,:,k,:].unsqueeze(2) @ sum_tot_vec.unsqueeze(1).transpose(-1, -2)).squeeze(2) # (b,l,l) or (b,l +4, l+4)
+            # wherever labels match (i.e. same cluster), q3, else -inf.
+            scores[:,:,k, :] = torch.where(label_mask, q3, scores[:, :, k, :])
         # ***************************************        
         
         # to clear gpu memory:
@@ -57,8 +70,6 @@ class ClusteredAttention(nn.Module):
 
         sum_tot_vec = sum_tot_vec.cpu()
         del sum_tot_vec
-
-
 
         A = self.dropout(torch.softmax(scale * scores, dim=-1)) #gpu
 
@@ -75,9 +86,10 @@ class ClusteredAttention(nn.Module):
 
         # ***************************************        
         # V = ( value.unsqueeze(2) * A.permute(0,3,2,1).transpose(-1, -2).unsqueeze(-1)).permute(0,2,1,3,4) # (b, l, l, v, s)
-        V = ( value.unsqueeze(2) * A.permute(0,3,2,1).transpose(-1, -2).unsqueeze(-1)).transpose(1,2) # (b, l, l, v, s)
-        
+
+        V = ( value.unsqueeze(2) * A.permute(0,3,2,1).transpose(-1, -2).unsqueeze(-1)).transpose(1,2) # (b, l, l, v, s)        
         V = V.sum(dim = 2) # (b, l, l, v, s) -> (b, l, v, s) 
+        
         # (b,l,v,s) can be added to the query (b, l, v, s).
         # ***************************************        
         # V = torch.randn((b,l,v,s), device = query.device)

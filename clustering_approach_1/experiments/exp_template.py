@@ -24,7 +24,8 @@ class Exp(object):
             'e_layers': self.setting['e_layers'],
             'norm_flag': self.setting['normalization_flag'],
             'device': self.device,
-            'num_vars': len(self.setting['variables_list'])
+            'num_vars': len(self.setting['variables_list']),
+            'time_enc': self.setting['time_enc']
         }
 
         self.model = self.model_dict[self.setting['model_type']].Model(model_params)
@@ -46,10 +47,13 @@ class Exp(object):
         total_loss = []
         self.model.eval()
         with torch.no_grad():
-            for i, (input_arr, output_arr) in enumerate(val_loader):
+            for i, (input_arr, input_enc_arr, output_arr, output_enc_arr) in enumerate(val_loader):
                 input_arr = input_arr.float().to(self.device)
                 output_arr = output_arr.float().to(self.device)
-                pred_output = self.model(input_arr) 
+                input_enc_arr = input_enc_arr.float().to(self.device)
+                output_enc_arr = output_enc_arr.float().to(self.device)
+
+                pred_output = self.model(input_arr, input_enc_arr) 
                 
                 prediction = pred_output.detach().cpu()
                 ground_truth = output_arr.detach().cpu()
@@ -59,7 +63,10 @@ class Exp(object):
 
                 input_arr = input_arr.cpu()
                 output_arr = output_arr.cpu() 
-                del input_arr, output_arr
+                input_enc_arr = input_enc_arr.cpu()
+                output_enc_arr = output_enc_arr.cpu() 
+
+                del input_arr, output_arr, input_enc_arr, output_enc_arr
 
         
         total_loss = np.average(total_loss)
@@ -71,7 +78,9 @@ class Exp(object):
         validation_data, validation_loader = self._get_data(flag = 'val')
         test_data, test_loader = self._get_data(flag = 'test')
         
-        print(len(train_data), len(validation_data), len(test_data))
+        # print(len(train_data), ":", len(validation_data), ":", len(test_data))
+        # return 
+        
         # for _, (input_arr, output_arr) in enumerate(train_loader):
         #     print(input_arr.shape, ":", output_arr.shape)
         #     break
@@ -83,9 +92,6 @@ class Exp(object):
         # for _, (input_arr, output_arr) in enumerate(vali_loader):
         #     print(input_arr.shape, ":", output_arr.shape)
         #     break
-
-
-        return 
 
         path = os.path.join(self.setting['checkpoints'], exp_name )
         if not os.path.exists(path):
@@ -107,21 +113,27 @@ class Exp(object):
             epoch_time = time.time()
 
             # stime = time.time()
-            for i, (input_arr, output_arr) in enumerate(train_loader):
-                # shapes: (b,l,v,s), (b,l,v,p)
+            for i, (input_arr, input_enc_arr, output_arr, output_enc_arr) in enumerate(train_loader):
+                
+                # shapes: (b,l,v,s),  (b,4,v,s), (b,l,v,p), (b,4,v,p)
                 
                 # etime = time.time()
                 # print(i, 'data loading time = ', etime - stime)
 
                 iteration_count += 1
                 model_optim.zero_grad()
+                
                 input_arr = input_arr.float().to(self.device)
                 output_arr = output_arr.float().to(self.device)
+                input_enc_arr = input_enc_arr.float().to(self.device)
+                output_enc_arr = output_enc_arr.float().to(self.device)
 
+                # print(type(input_arr), type(input_enc_arr)) # <torch.Tensor>
+                                
                 # print(input_arr.shape, ":" , output_arr.shape) # (2, 20, 2304) #(2, 5, 2304)
                 # (b, s, l) -> (b, p, l)
 
-                pred_output = self.model(input_arr) 
+                pred_output = self.model(input_arr, input_enc_arr) 
 
                 loss = loss_criterion(pred_output, output_arr)
                 train_loss.append(loss.item())
@@ -163,7 +175,10 @@ class Exp(object):
 
         input_arr = input_arr.cpu()
         output_arr = output_arr.cpu() 
-        del input_arr, output_arr
+        input_enc_arr = input_enc_arr.cpu()
+        output_enc_arr = output_enc_arr.cpu() 
+
+        del input_arr, output_arr, input_enc_arr, output_enc_arr
 
         return self.model
 
@@ -180,11 +195,14 @@ class Exp(object):
 
         self.model.eval()
         with torch.no_grad():
-            for i, (input_arr, output_arr) in enumerate(test_loader):
+            for i, (input_arr, input_enc_arr, output_arr, output_enc_arr) in enumerate(test_loader):
+                
                 input_arr = input_arr.float().to(self.device)
                 output_arr = output_arr.float().to(self.device)
-                
-                pred_output = self.model(input_arr)
+                input_enc_arr = input_enc_arr.float().to(self.device)
+                output_enc_arr = output_enc_arr.float().to(self.device)
+
+                pred_output = self.model(input_arr, input_enc_arr)
 
                 pred_output = pred_output.detach().cpu().numpy()
                 output_arr = output_arr.detach().cpu().numpy()
@@ -193,8 +211,10 @@ class Exp(object):
                 trues.append(output_arr)
                 
                 input_arr = input_arr.cpu()
-                output_arr = output_arr.cpu() 
-                del input_arr, output_arr
+                input_enc_arr = input_enc_arr.cpu()
+                output_enc_arr = output_enc_arr.cpu() 
+                
+                del input_arr, output_arr, input_enc_arr, output_enc_arr
                 
         preds = np.array(preds)
         trues = np.array(trues)

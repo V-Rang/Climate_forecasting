@@ -19,14 +19,9 @@ class Model(nn.Module):
         self.e_layers = model_settings['e_layers']
         self.norm_flag = model_settings['norm_flag']
         self.device = model_settings['device']
+        self.time_enc = model_settings['time_enc']
 
-        # self.num_lats = model_settings['']
-        # self.num_lons =
-
-        self.l1 = nn.Linear(self.seq_len, 3)
-        self.l2 = nn.Linear(3, self.seq_len)
-
-        self.attention = ClusteredAttention(output_attention=True)
+        self.attention = ClusteredAttention(output_attention=True, time_enc = model_settings['time_enc'])
         
         self.encod_embedding = TseriesEmbed(self.seq_len, self.d_model)
 
@@ -38,7 +33,7 @@ class Model(nn.Module):
         self.decoder = nn.Linear(self.d_model, self.pred_len, bias=True)
 
     #(b, v, s, lat, lon) -> model -> (b, v, p, lat, lon)
-    def forward(self, input_arr):
+    def forward(self, input_arr, input_enc_arr):
 
         assert(self.norm_flag in ('batch', 'sample', 'None')  )
         
@@ -93,7 +88,7 @@ class Model(nn.Module):
         # zeroing out values for points not in the same cluster.
         #testing self.attention
         # stime = time.time()
-        encode_out = self.encod_embedding(input_arr) #(b,l,v,s) -> (b,l,v,d_model)
+        encode_out = self.encod_embedding(input_arr, input_enc_arr) #(b,l,v,s) -> (b,l,v,d_model) or (b,l+4,v,d_model) 
         # etime = time.time()
         # print('enc_embedding time = ', etime - stime,)
         
@@ -101,7 +96,7 @@ class Model(nn.Module):
         # del_x, scores = self.attention(input_arr, input_arr, input_arr, labels)                
         # stime = time.time()
         encode_out, attention_vals = self.encoder(encode_out, labels)
-
+        
         labels = labels.cpu()
         del labels
 
@@ -112,9 +107,19 @@ class Model(nn.Module):
         # print(encode_out.shape, ":", len(attention_vals), ":", attention_vals[0].shape)
 
         # stime = time.time()
-        dec_out = self.decoder(encode_out) # (b, l, v, p)
+        dec_out = self.decoder(encode_out) # (b, l, v, p) or (b, l+4, v, p)
+
+        if self.time_enc:        
+            dec_out = dec_out[:,:-4,:,:] # (b, l, v, p)
+
+        
         # etime = time.time()
         # print('decoder time = ', etime - stime,)
+
+        # this has to be modified.
+        # if self.time_enc:        
+        #     dec_out = dec_out[:,:-1,:] # (b, l, p)
+
 
         # normalization??
         if self.norm_flag  == 'batch' or self.norm_flag == 'sample':
