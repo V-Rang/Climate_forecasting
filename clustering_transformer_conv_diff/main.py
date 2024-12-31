@@ -21,8 +21,8 @@ input_settings['obs_path'] = "snapshots_CD.npy"
 input_settings['seq_len'] = 40 # t-instances fed to model  
 # input_settings['d_model'] = 4 * input_settings['seq_len']
 input_settings['d_model'] = 512 # could experiment with this too.
-input_settings['pred_len'] = 30 # t-instances output by model 
-input_settings['batch_size'] = 4 # vary as  2, 4, 8, 16, 32, ....
+input_settings['pred_len'] = 40 # t-instances output by model 
+input_settings['batch_size'] = 16 # vary as  2, 4, 8, 16, 32, ....
 input_settings['num_epochs'] = 100    
 input_settings['learning_rate'] = 1e-3
 input_settings['e_layers'] = 4 # num. of encoding layers (could experiment with this)
@@ -31,6 +31,7 @@ input_settings['checkpoints'] = './checkpoints/' # model checkpoint locations
 # post which the model training for the current epoch will be stopped
 # done to prevent overfitting on training data.
 input_settings['patience'] = 3 
+input_settings['time_enc'] = 1 # 0 or 1. 
 
 # the model will take in (b, l, v, s) shaped input.
 # three choices:
@@ -61,7 +62,7 @@ input_settings['normalization_flag'] = 'batch' # batch, sample or None
 
 exp = Exp(input_settings)
 
-exp_name = '{}_{}-sl{}-dm{}-pl{}-bs{}-ne{}-lr{}-el{}_with_attention'.format(
+exp_name = '{}_{}-sl{}-dm{}-pl{}-bs{}-ne{}-lr{}-el{}_wo_attention_timenc'.format(
     input_settings['model_type'],
     input_settings['obs_path'][42:-1],
     input_settings['seq_len'],
@@ -72,6 +73,25 @@ exp_name = '{}_{}-sl{}-dm{}-pl{}-bs{}-ne{}-lr{}-el{}_with_attention'.format(
     input_settings['learning_rate'],
     input_settings['e_layers'],   
 )
+
+
+
+# from data_provider.data_loader import DataLoaderCreate
+# data_set, data_loader = DataLoaderCreate(input_settings, flag = 'train')
+# for i, (t1, t2, t3, t4) in enumerate(data_loader):
+#     print(t1.shape, ":", t2.shape, ":", t3.shape , ":", t4.shape)
+#     break
+
+
+    # print(t1.shape, ":", t2.shape)
+    # print(test_obj[0].shape, ":", test_obj[1].shape)
+    # break
+
+# for i, (t1,t2,t3,t4) in enumerate(data_loader):
+#     print(t1.shape, ":", t2.shape, ":", t3.shape, ":", t4.shape)
+#     # print(test_obj[0].shape, ":", test_obj[1].shape)
+#     break
+
 
 exp.train(exp_name)
 exp.test(exp_name)

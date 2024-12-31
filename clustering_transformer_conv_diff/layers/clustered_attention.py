@@ -5,19 +5,21 @@ from math import sqrt
 import time
 
 class ClusteredAttention(nn.Module):
-    def __init__(self, scale = None, attention_dropout = 0.1, output_attention = False ):
+    def __init__(self, scale = None, attention_dropout = 0.1, output_attention = False, time_enc = 0):
         super(ClusteredAttention, self).__init__()
         self.dropout = nn.Dropout(attention_dropout)
         self.output_attention = output_attention
         self.scale = scale
+        self.time_enc = time_enc
 
     def forward(self, query: torch.tensor, key: torch.tensor, value: torch.tensor, label_arr: np.array) -> torch.tensor:        
         
         '''
         query, key, value: (b, l, d_model) 
-        label_arr -> (b, l)
+        label_arr -> (b, l) # l-1 if time_enc is True.
         scores -> (b, l, l)
         '''
+                    
         b, l, s  = query.shape
         scale = self.scale or 1./ sqrt(s)
 
@@ -25,6 +27,14 @@ class ClusteredAttention(nn.Module):
         
         # applying mask.
         mask = label_arr[:, :, None] != label_arr[:, None, :] 
+        # if time enc is true, modify label_arr such that every 'query' has to pay attention
+        # the corresp. 'key'.
+        if self.time_enc:
+            time_enc_mask = torch.zeros((b,1,label_arr.shape[1]), dtype=torch.bool, device = query.device) #(b, 1, l - 1)
+            mask = torch.cat((mask, time_enc_mask), dim = 1) # (b, l, l-1)
+            time_enc_mask = torch.zeros((b,label_arr.shape[1]+1, 1), dtype=torch.bool, device = query.device) #(b, 1, l - 1)
+            mask = torch.cat((mask, time_enc_mask), dim = 2) # (b, l, l)
+            
         scores[mask] = float('-inf')
 
         A = self.dropout(torch.softmax(scale * scores, dim=-1))

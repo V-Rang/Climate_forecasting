@@ -21,7 +21,7 @@ class EncoderLayer(nn.Module):
         output:
         b,l, d_model
         '''
-        
+
         new_x, attention = self.attention(
             x, x, x, label_arr
         )

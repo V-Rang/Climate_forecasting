@@ -23,7 +23,8 @@ class Exp(object):
             'pred_len': self.setting['pred_len'],
             'e_layers': self.setting['e_layers'],
             'norm_flag': self.setting['normalization_flag'],
-            'device': self.device
+            'device': self.device,
+            'time_enc': self.setting['time_enc']
         }
 
         self.model = self.model_dict[self.setting['model_type']].Model(model_params)
@@ -45,10 +46,14 @@ class Exp(object):
         total_loss = []
         self.model.eval()
         with torch.no_grad():
-            for i, (input_arr, output_arr) in enumerate(val_loader):
+            for i, (input_arr, input_enc_arr, output_arr, output_enc_arr) in enumerate(val_loader):
+                
                 input_arr = input_arr.float().to(self.device)
                 output_arr = output_arr.float().to(self.device)
-                pred_output = self.model(input_arr) 
+                input_enc_arr = input_enc_arr.float().to(self.device)
+                output_enc_arr = output_enc_arr.float().to(self.device)
+
+                pred_output = self.model(input_arr, input_enc_arr) 
                 
                 prediction = pred_output.detach().cpu()
                 ground_truth = output_arr.detach().cpu()
@@ -65,6 +70,8 @@ class Exp(object):
         validation_data, validation_loader = self._get_data(flag = 'val')
         test_data, test_loader = self._get_data(flag = 'test')
 
+        # print(len(test_data), ":", len(validation_data), ":", len(test_data))
+        
         # for _, (input_arr, output_arr) in enumerate(train_loader):
         #     print(input_arr.shape, ":", output_arr.shape)
         #     break
@@ -79,7 +86,7 @@ class Exp(object):
 
         # print(train_data.data.shape, ":", test_data.data.shape, ":", validation_data.data.shape)
 
-        path = os.path.join(self.setting['checkpoints'], exp_name )
+        path = os.path.join(self.setting['checkpoints'], exp_name)
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -98,16 +105,19 @@ class Exp(object):
             self.model.train()
             epoch_time = time.time()
 
-            for i, (input_arr, output_arr) in enumerate(train_loader):
+            for i, (input_arr, input_enc_arr, output_arr, output_enc_arr) in enumerate(train_loader):
+                # print(input_arr.shape, input_enc_arr.shape, output_arr.shape, output_enc_err.shape)
                 iteration_count += 1
                 model_optim.zero_grad()
                 input_arr = input_arr.float().to(self.device)
                 output_arr = output_arr.float().to(self.device)
-                
+                input_enc_arr = input_enc_arr.float().to(self.device)
+                output_enc_arr = output_enc_arr.float().to(self.device)
+
                 # print(input_arr.shape, ":" , output_arr.shape) # (2, 20, 2304) #(2, 5, 2304)
                 # (b, s, l) -> (b, p, l)
 
-                pred_output = self.model(input_arr) 
+                pred_output = self.model(input_arr, input_enc_arr)             
                 loss = loss_criterion(pred_output, output_arr)
                 train_loss.append(loss.item())
             
@@ -121,7 +131,7 @@ class Exp(object):
 
                 loss.backward()
                 model_optim.step()
-
+            
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))            
             train_loss = np.average(train_loss)
             validation_loss = self.validation(validation_data, validation_loader, loss_criterion)
@@ -158,11 +168,14 @@ class Exp(object):
 
         self.model.eval()
         with torch.no_grad():
-            for i, (input_arr, output_arr) in enumerate(test_loader):
+            for i, (input_arr, input_enc_arr, output_arr, output_enc_arr) in enumerate(test_loader):
+
                 input_arr = input_arr.float().to(self.device)
                 output_arr = output_arr.float().to(self.device)
+                input_enc_arr = input_enc_arr.float().to(self.device)
+                output_enc_arr = output_enc_arr.float().to(self.device)
                 
-                pred_output = self.model(input_arr)
+                pred_output = self.model(input_arr, input_enc_arr)
 
                 pred_output = pred_output.detach().cpu().numpy()
                 output_arr = output_arr.detach().cpu().numpy()
@@ -171,7 +184,7 @@ class Exp(object):
                 trues.append(output_arr)
                 
         preds = np.array(preds)
-        trus = np.array(trues)
+        trues = np.array(trues)
 
         # mae, mse, rmse, mape, mspe = metric(preds, trues)
         # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe]))

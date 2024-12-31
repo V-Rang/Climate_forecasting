@@ -11,14 +11,15 @@ from layers.Enc_Dec import Encoder
 class Model(nn.Module):
     def __init__(self, model_settings):
         super(Model, self).__init__()
-        
+
         self.seq_len = model_settings['seq_len']
         self.pred_len = model_settings['pred_len']
         self.d_model = model_settings['d_model']
         self.e_layers = model_settings['e_layers']
         self.norm_flag = model_settings['norm_flag']
         self.device = model_settings['device']
-        self.attention = ClusteredAttention(output_attention=True)
+        self.time_enc = model_settings['time_enc']
+        self.attention = ClusteredAttention(output_attention = True, time_enc = model_settings['time_enc'])
         
         self.encod_embedding = TseriesEmbed(self.seq_len, self.d_model)
 
@@ -30,7 +31,7 @@ class Model(nn.Module):
         self.decoder = nn.Linear(self.d_model, self.pred_len, bias=True)
 
     #(b, v, s, lat, lon) -> model -> (b, v, p, lat, lon)
-    def forward(self, input_arr):
+    def forward(self, input_arr, input_enc_arr):
 
         assert(self.norm_flag in ('batch', 'sample', 'None')  )
         
@@ -58,7 +59,7 @@ class Model(nn.Module):
         input_arr = input_arr.permute((0, 2, 1)) # (b, l, s)
 
         # labels = ClusterDetermine(input_arr.reshape(bsize, num_vars * seq_len, num_lats * num_lons).permute((0, 2, 1))) 
-        labels = ClusterDetermine(input_arr) #(b, l)
+        labels = ClusterDetermine(input_arr) #(b, l or l-1 (time_enc))
         labels = labels.to(self.device) # move to gpu.
 
         if self.norm_flag  == 'batch':
@@ -80,26 +81,30 @@ class Model(nn.Module):
         # for each sample (lat*lon, v,  s_len) implement clustered attention using the (lat * lon) labels, 
         # zeroing out values for points not in the same cluster.
         #testing self.attention
-        
-        encode_out = self.encod_embedding(input_arr) #(b,l, s) -> (b,l, d_model)
+
+        encode_out = self.encod_embedding(input_arr, input_enc_arr) #(b,l, s) -> (b,l, d_model), l = 2304 or 2305, d_model = 512 (fixed).
 
         # is it possible to process entire batch at once instead of one sample at a time as below - yes, done.
         # del_x, scores = self.attention(input_arr, input_arr, input_arr, labels)                
-        encode_out, attention_vals = self.encoder(encode_out, labels)
+        encode_out, attention_vals = self.encoder(encode_out, labels) 
+        # encode_out: b, l, d_model
+        # attention_values: list (e_layers), each shape: b, l or (l-1), l or (l-1) (l: time_enc) 
 
         # (b, l, v, d_model), n_elayers, (b, l, v, l)
         # print(encode_out.shape, ":", len(attention_vals), ":", attention_vals[0].shape)
 
-        dec_out = self.decoder(encode_out) # (b, l, v, p)
+        dec_out = self.decoder(encode_out) # (b, l, p)
+
+        if self.time_enc:        
+            dec_out = dec_out[:,:-1,:] # (b, l, p)
 
         # normalization??
         if self.norm_flag  == 'batch' or self.norm_flag == 'sample':
             dec_out *= stdev            
             dec_out += means
         
-        dec_out = dec_out.permute(0,2, 1) # (b, p, l)
+        dec_out = dec_out.permute(0, 2, 1) # (b, p, l)
 
-        
         # dec_out = dec_out.reshape((list(dec_out.shape[:-1]) + [num_lats, num_lons]   )) # (b, v, p, la, lo)
         return dec_out # (b, p, l)
 
