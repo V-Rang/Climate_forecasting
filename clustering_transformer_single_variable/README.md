@@ -1,1 +1,1 @@
-Incorporates wavelet transform using PyWavelets for data pre-processing prior to feeding to clustered attention transformer.
+Clustered attention transformer for a single variable data (Nt x Ny x Nx) stored in a numpy array.
