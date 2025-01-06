@@ -10,25 +10,26 @@ from utils.tools import EarlyStopping, adjust_learning_rate
 from utils.metrics import metric
 
 class Exp(object):
-    def __init__(self, setting):
-        self.setting = setting
+    def __init__(self, args):
+        self.args = args
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.model_dict = {
             'clustered_transformer': clustered_transformer
         }
 
-        model_params = {'seq_len': self.setting['seq_len'],
-            'd_model': self.setting['d_model'],
-            'pred_len': self.setting['pred_len'],
-            'e_layers': self.setting['e_layers'],
-            'norm_flag': self.setting['normalization_flag'],
+        model_params = {'seq_len': self.args.seq_len,
+            'd_model': self.args.d_model,
+            'pred_len': self.args.pred_len,
+            'e_layers': self.args.e_layers,
+            'norm_flag': self.args.normalization_flag,
+            'attention_masking': self.args.attention_masking,
             'device': self.device,
-            'time_enc': self.setting['time_enc'],
-            'wavelet_transformation': self.setting['wavelet_transformation']
+            'time_enc': self.args.time_enc,
+            'wavelet_transformation': self.args.wavelet_transformation
         }
 
-        self.model = self.model_dict[self.setting['model_type']].Model(model_params)
+        self.model = self.model_dict[self.args.model_type].Model(model_params)
         self.model = self.model.to(self.device)
 
     def _select_criterion(self):
@@ -36,11 +37,11 @@ class Exp(object):
         return criterion
 
     def _select_optimizer(self):
-        model_optim = optim.Adam(self.model.parameters(), lr = self.setting['learning_rate'])
+        model_optim = optim.Adam(self.model.parameters(), lr = self.args.learning_rate)
         return model_optim
     
     def _get_data(self, flag):
-        data_set, data_loader = DataLoaderCreate(self.setting, flag)
+        data_set, data_loader = DataLoaderCreate(self.args, flag)
         return data_set, data_loader
 
     def validation(self, val_data, val_loader, criterion):
@@ -86,20 +87,20 @@ class Exp(object):
 
         # print(train_data.data.shape, ":", test_data.data.shape, ":", validation_data.data.shape)
 
-        path = os.path.join(self.setting['checkpoints'], exp_name)
+        path = os.path.join(self.args.checkpoints, exp_name)
         if not os.path.exists(path):
             os.makedirs(path)
 
         time_now = time.time()
         train_steps = len(train_loader)
 
-        early_stopping = EarlyStopping(self.setting['patience'], verbose = True)
+        early_stopping = EarlyStopping(self.args.patience, verbose = True)
 
         # early stopping and adjustable learning rate - implement later.
         model_optim = self._select_optimizer()
         loss_criterion = self._select_criterion()
 
-        for epoch in range(self.setting['num_epochs']):
+        for epoch in range(self.args.num_epochs):
             iteration_count = 0
             train_loss = []
             self.model.train()
@@ -124,7 +125,7 @@ class Exp(object):
                 if (i + 1) % 10 == 0:
                     print("\titers: {0}, epoch: {1} | loss: {1:.7f}".format(i+1, epoch + 1, loss.item()))
                     speed = (time.time() - time_now) / iteration_count
-                    left_time = speed * ((self.setting['num_epochs'] - epoch) * train_steps - i)
+                    left_time = speed * ((self.args.num_epochs - epoch) * train_steps - i)
                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                     iteration_count = 0
                     time_now = time.time()
@@ -149,7 +150,7 @@ class Exp(object):
                 print("Early stopping")
                 break
 
-            adjust_learning_rate(model_optim, epoch + 1, self.setting)
+            adjust_learning_rate(model_optim, epoch + 1, self.args)
 
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))

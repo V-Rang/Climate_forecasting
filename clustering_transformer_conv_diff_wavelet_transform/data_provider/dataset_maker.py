@@ -13,15 +13,15 @@ import torch
 import pywt as pw
 
 class DatasetCreate(Dataset):
-    def __init__(self, settings, flag) -> np.array:
+    def __init__(self, args, flag) -> np.array:
         
         # assert(flag == 'train' or flag == 'test' or flag == 'val')
-        self.seq_len = settings['seq_len']
-        self.pred_len = settings['pred_len']       
+        self.seq_len = args.seq_len
+        self.pred_len = args.pred_len       
         # self.data = data
         # self.len_data = len(data)
     
-        glb_data = np.load(settings['obs_path']) #(time instances, num points_y, num points_x)
+        glb_data = np.load(args.obs_path) #(time instances, num points_y, num points_x)
         # settings['height'], settings['width'] = glb_data.shape[1], glb_data.shape[2]
 
         len_glb_data = glb_data.shape[0]
@@ -36,15 +36,13 @@ class DatasetCreate(Dataset):
 
         dl, dr = left_limit[set_type[flag]], right_limit[set_type[flag]]
         
-        self.loc_data = glb_data[dl: dr] #(t, Ny, Nx)
-        
+        self.loc_data = glb_data[dl: dr] #(t, Ny, Nx)        
         self.len_data = self.loc_data.shape[0]
-
         self.time_enc_data = np.zeros(dr - dl)
 
         # print(len(self.time_enc_data), self.loc_data.shape[0])
         
-        if(settings['time_enc']):
+        if(args.time_enc):
             total_time_vals = np.linspace(0,1,len_glb_data)
             self.time_enc_data = total_time_vals[dl: dr]
 

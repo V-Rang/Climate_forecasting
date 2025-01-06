@@ -19,13 +19,14 @@ class Model(nn.Module):
         self.e_layers = model_settings['e_layers']
         self.norm_flag = model_settings['norm_flag']
         self.device = model_settings['device']
+        self.attention_masking = model_settings['attention_masking']
         self.time_enc = model_settings['time_enc']
         self.wavelet_transform = model_settings['wavelet_transformation']
 
         self.wave_dec = wave_dec
         self.wave_rec = wave_rec
 
-        self.attention = ClusteredAttention(output_attention = True, time_enc = model_settings['time_enc'])
+        self.attention = ClusteredAttention(output_attention = True, attention_masking = self.attention_masking, time_enc = self.time_enc)
         
         self.encod_embedding = TseriesEmbed(self.seq_len, self.d_model)
 
@@ -61,8 +62,9 @@ class Model(nn.Module):
 
         if self.wavelet_transform:
             input_arr = self.wave_dec(input_arr.cpu().numpy()) # (b,s,h,w) -> (b,s,l)
-
-        input_arr = torch.tensor(input_arr, device = self.device)
+            input_arr = torch.tensor(input_arr, device = self.device)
+        else:
+            input_arr = input_arr.reshape((bsize, seq_len, height  * width))
 
         # input_arr = input_arr.reshape((bsize, seq_len, height * width))
         # input_arr = input_arr.reshape(bsize, num_vars * seq_len, num_lats * num_lons)

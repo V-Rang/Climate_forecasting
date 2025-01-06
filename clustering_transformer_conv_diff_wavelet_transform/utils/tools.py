@@ -2,15 +2,9 @@ import os
 import math
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
-import pandas as pd
 
-plt.switch_backend('agg')
-
-
-
-def adjust_learning_rate(optimizer, epoch, setting):
-    lr = setting['learning_rate'] * math.exp(-0.2 * epoch)
+def adjust_learning_rate(optimizer, epoch, args):
+    lr = args.learning_rate * math.exp(-0.2 * epoch)
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     print('Updating learning rate to {}'.format(lr))

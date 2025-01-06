@@ -2,7 +2,7 @@ from torch.utils.data import Dataset, DataLoader
 from data_provider.dataset_maker import DatasetCreate
 import numpy as np
 
-def DataLoaderCreate(settings, flag):
+def DataLoaderCreate(args, flag):
     # data = np.load(settings['obs_path']) #(time instances, num points)
     
     # if settings['time_enc'] == 1:
@@ -22,7 +22,7 @@ def DataLoaderCreate(settings, flag):
 
     # data_set = DatasetCreate( data[dl : dr], settings['seq_len'], settings['pred_len'])
 
-    data_set = DatasetCreate(settings, flag)
+    data_set = DatasetCreate(args, flag)
 
     if flag == 'test':
         shuffle_flag = False
@@ -31,7 +31,7 @@ def DataLoaderCreate(settings, flag):
     else: # train and val.
         shuffle_flag = True
         drop_last = True
-        batch_size = settings['batch_size']
+        batch_size = args.batch_size
 
     data_loader = DataLoader(
         data_set,
