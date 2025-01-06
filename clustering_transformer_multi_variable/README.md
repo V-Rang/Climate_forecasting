@@ -1,0 +1,4 @@
+Clustered attention transformer for multi-variable data (Nt x Ny x Nx x Nv) stored in a HDF5 file. Allows for:
+1. attention masking (zero out attention for non-cluster points) - the clusters are determined by KMeans (centers = 5), on the data (b,l,v*s), where b, l,v,s are the batch size, number of spatial points (height * width), number of variables, sequence length.
+2. time encoding (additional *query* and *key* corresponding to time-instance of variable value).
+3. wavelet transform (Wavelet Transformation for data pre-processing using [PyWavelets](https://pywavelets.readthedocs.io/en/latest/)).
