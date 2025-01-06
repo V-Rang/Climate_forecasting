@@ -123,7 +123,7 @@ class Model(nn.Module):
         del encode_out
 
         if self.time_enc:        
-            dec_out = dec_out[:,:-4,:,:] # (b, l, v, p)
+            dec_out = dec_out[:,:-1,:,:] # (b, l, v, p)
 
         
         # etime = time.time()

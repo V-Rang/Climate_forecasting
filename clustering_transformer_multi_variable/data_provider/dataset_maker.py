@@ -44,15 +44,14 @@ class DatasetCreate(Dataset):
         
         self.loc_data = glb_data[dl: dr] #(t, Ny, Nx, v)        
         self.len_data = self.loc_data.shape[0]
-        self.time_enc_data = np.zeros(dr - dl)
+        self.time_enc_data = np.zeros((1, args.num_vars, len_glb_data)) #(1, v, t)
 
         # print(len(self.time_enc_data), self.loc_data.shape[0])
         
         if(args.time_enc):
-            total_time_vals = np.linspace(0,1,len_glb_data)
-            self.time_enc_data = total_time_vals[dl: dr]
+            total_time_vals = torch.linspace(args.time_lower_limit, args.time_upper_limit,len_glb_data)
+            self.time_enc_data = total_time_vals.unsqueeze(0).expand((args.num_vars,-1)).unsqueeze(0) #(1, v, t)
 
-        
     def __len__(self):
         return self.len_data - self.seq_len - self.pred_len + 1
         
@@ -73,4 +72,4 @@ class DatasetCreate(Dataset):
         # data_init_model = data_2d_frames.reshape((data_2d_frames.shape[0], -1)) #(slen, 24 * 96) = (slen, 2304) = (slen, 48 * 48)
         # return data_init_model, self.time_enc_data[inp_start_index: inp_end_index], output_data_list,  self.time_enc_data[out_start_index: out_end_index]
 
-        return input_data_list, self.time_enc_data[inp_start_index: inp_end_index], output_data_list,  self.time_enc_data[out_start_index: out_end_index]
+        return input_data_list, self.time_enc_data[:,:,inp_start_index: inp_end_index], output_data_list,  self.time_enc_data[:,:, out_start_index: out_end_index]

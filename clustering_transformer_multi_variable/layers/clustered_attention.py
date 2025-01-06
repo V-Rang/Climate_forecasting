@@ -26,28 +26,32 @@ class ClusteredAttention(nn.Module):
 
         sum_tot_vec = key.sum(dim = 2)  # Summing over the `k1` dimension, Shape: (b, l, s)
 
-        label_arr = label_arr.cpu()
-        del label_arr
-
         key = key.cpu()
         del key
 
         # with attn masking
         if self.attention_masking:
             label_mask = label_arr.unsqueeze(2) == label_arr.unsqueeze(1)  # Shape: (b, l, l)
-            # if time_enc: label_mask: (b, l, l) -> (b, l+4, l+4)
+            # if time_enc: label_mask: (b, l, l) -> (b, l+1, l+1)
             if self.time_enc:
-                time_enc_mask = torch.ones((b,4,label_arr.shape[1]), dtype=torch.bool, device = query.device) #(b, 4, l)
-                label_mask = torch.cat((label_mask, time_enc_mask), dim = 1) # (b, l+4, l)
-                time_enc_mask = torch.ones((b,label_arr.shape[1]+4, 4), dtype=torch.bool, device = query.device) #(b, l+4, 4)
-                label_mask = torch.cat((label_mask, time_enc_mask), dim = 2) # (b, l + 4, l + 4)
-            
+                time_enc_mask = torch.ones((b,1,label_arr.shape[1]), dtype=torch.bool, device = query.device) #(b, 1, l)
+                label_mask = torch.cat((label_mask, time_enc_mask), dim = 1) # (b, l+1, l)
+                time_enc_mask = torch.ones((b,label_arr.shape[1]+1, 1), dtype=torch.bool, device = query.device) #(b, l+1, 1)
+                label_mask = torch.cat((label_mask, time_enc_mask), dim = 2) # (b, l + 1, l + 1)
+                
+                time_enc_mask = time_enc_mask.cpu()
+                del time_enc_mask
+
             scores = -torch.inf * torch.ones((b, l, v, l), device=query.device)
             for k in range(v):
                 q3 = (query[:,:,k,:].unsqueeze(2) @ sum_tot_vec.unsqueeze(1).transpose(-1, -2)).squeeze(2) # (b,l,l) or (b,l +4, l+4)
                 # wherever labels match (i.e. same cluster), q3, else -inf.
                 scores[:,:,k, :] = torch.where(label_mask, q3, scores[:, :, k, :])
             
+            
+            label_arr = label_arr.cpu()
+            del label_arr
+
             label_mask = label_mask.cpu()
             del label_mask
 
@@ -73,7 +77,18 @@ class ClusteredAttention(nn.Module):
         scores = scores.cpu()
         del scores
 
-        V = ( value.unsqueeze(2) * A.permute(0,3,2,1).transpose(-1, -2).unsqueeze(-1)).transpose(1,2) # (b, l, l, v, s)        
+        array_1 = value.unsqueeze(2)
+        array_2 = A.permute(0,3,2,1).transpose(-1, -2).unsqueeze(-1)
+
+        V = (array_1 * array_2).transpose(1,2) # (b, l, l, v, s)        
+
+        array_1 = array_1.cpu()
+        del array_1
+
+        array_2 = array_2.cpu()
+        del array_2
+
+        # V = ( value.unsqueeze(2) * A.permute(0,3,2,1).transpose(-1, -2).unsqueeze(-1)).transpose(1,2) # (b, l, l, v, s)        
         V = V.sum(dim = 2) # (b, l, l, v, s) -> (b, l, v, s) 
         
         # (b,l,v,s) can be added to the query (b, l, v, s).

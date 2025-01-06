@@ -130,7 +130,7 @@ class Exp(object):
                 iteration_count += 1
                 model_optim.zero_grad()
                 
-                input_arr = input_arr.float().to(self.device)
+                input_arr = input_arr.float().to(self.device) #all float32
                 output_arr = output_arr.float().to(self.device)
                 input_enc_arr = input_enc_arr.float().to(self.device)
                 output_enc_arr = output_enc_arr.float().to(self.device)

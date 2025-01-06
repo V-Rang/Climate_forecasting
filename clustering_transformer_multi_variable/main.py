@@ -11,26 +11,30 @@ from models.clustered_transformer import Model
 import gcsfs
 from torch import optim
 from experiments.exp_template import Exp
-
+torch.cuda.empty_cache()
 import argparse
 
 parser = argparse.ArgumentParser(description='clustered_attention_transformer')
 parser.add_argument('--model_type', type = str, default = 'clustered_transformer')
 parser.add_argument('--data_file', type = str, default = '2d_diff_react_32_32_10k.h5')
 parser.add_argument('--num_vars', type = int, default = 2)
-parser.add_argument('--d_model', type = int, default = 4)
-parser.add_argument('--seq_len', type = int, default = 40)
-parser.add_argument('--pred_len', type = int, default = 10)
-parser.add_argument('--batch_size', type = int, default = 16)
+parser.add_argument('--d_model', type = int, default = 512)
+parser.add_argument('--seq_len', type = int, default = 50)
+parser.add_argument('--pred_len', type = int, default = 5)
+parser.add_argument('--batch_size', type = int, default = 2)
 parser.add_argument('--num_epochs', type = int, default = 100)
 parser.add_argument('--learning_rate', type = float, default = 1e-3)
 parser.add_argument('--e_layers', type = int, default = 4)
 parser.add_argument('--checkpoints', type = str, default = './checkpoints/', help='location of model checkpoints')
 parser.add_argument('--patience', type = int, default = 3)
 parser.add_argument('--normalization_flag', type = str, default = 'batch')
-parser.add_argument('--attention_masking', type = int, default = 0) # to restrict attention to cluster specific points only.
-parser.add_argument('--time_enc', type = int, default = 0)
+parser.add_argument('--attention_masking', type = int, default = 1) # to restrict attention to cluster specific points only.
+parser.add_argument('--time_enc', type = int, default = 1)
 parser.add_argument('--wavelet_transformation', type = int, default = 0)
+
+#Simulation props:
+parser.add_argument('--time_lower_limit', type = float, default = 0)
+parser.add_argument('--time_upper_limit', type = float, default = 5)
 
 args = parser.parse_args()
 exp = Exp(args)
@@ -77,8 +81,9 @@ exp_name = '{}_{}-sl{}-dm{}-pl{}-bs{}-ne{}-lr{}-el{}-attn{}-timenc{}-wt{}'.forma
 
 # from data_provider.data_loader import DataLoaderCreate
 # # from layers.wavelet_transform import wave_dec, wave_rec
-# data_set, data_loader = DataLoaderCreate(input_settings, flag = 'train')
+# data_set, data_loader = DataLoaderCreate(args, flag = 'train')
 # for i, (t1, t2, t3, t4) in enumerate(data_loader):
+#     # print(t1.device, ":", t2.device, ":", t3.device, ":", t4.device) # all cpu.
 #     print(t1.shape,":",t2.shape ,":", t3.shape, ":", t4.shape)
 #     break
 
