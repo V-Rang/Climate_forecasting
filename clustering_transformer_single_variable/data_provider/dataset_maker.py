@@ -43,10 +43,9 @@ class DatasetCreate(Dataset):
         # print(len(self.time_enc_data), self.loc_data.shape[0])
         
         if(args.time_enc):
-            total_time_vals = np.linspace(0,1,len_glb_data)
+            total_time_vals = np.linspace(args.time_lower_limit, args.time_upper_limit,len_glb_data)
             self.time_enc_data = total_time_vals[dl: dr]
 
-        
     def __len__(self):
         return self.len_data - self.seq_len - self.pred_len + 1
         

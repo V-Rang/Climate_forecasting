@@ -29,6 +29,9 @@ parser.add_argument('--attention_masking', type = int, default = 0) # to restric
 parser.add_argument('--time_enc', type = int, default = 0)
 parser.add_argument('--wavelet_transformation', type = int, default = 0)
 
+#Simulation props:
+parser.add_argument('--time_lower_limit', type = float, default = 0)
+parser.add_argument('--time_upper_limit', type = float, default = 5)
 
 args = parser.parse_args()
 

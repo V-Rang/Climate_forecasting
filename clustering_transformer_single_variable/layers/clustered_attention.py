@@ -35,6 +35,9 @@ class ClusteredAttention(nn.Module):
                 mask = torch.cat((mask, time_enc_mask), dim = 1) # (b, l, l-1)
                 time_enc_mask = torch.zeros((b,label_arr.shape[1]+1, 1), dtype=torch.bool, device = query.device) #(b, 1, l - 1)
                 mask = torch.cat((mask, time_enc_mask), dim = 2) # (b, l, l)            
+    
+                time_enc_mask = time_enc_mask.cpu()
+                del time_enc_mask
             
             scores[mask] = float('-inf')
 
@@ -44,8 +47,6 @@ class ClusteredAttention(nn.Module):
             label_arr = label_arr.cpu()
             del label_arr
 
-            time_enc_mask = time_enc_mask.cpu()
-            del time_enc_mask
 
         A = self.dropout(torch.softmax(scale * scores, dim=-1))
 
