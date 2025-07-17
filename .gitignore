@@ -1,0 +1,53 @@
+# Byte‑compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# Python virtual environments
+env/
+venv/
+.venv/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+# Notebook outputs (if you clear outputs before commit)
+*.nb.html
+*.nbconvert.ipynb
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large data files you don’t want in Git
+*.csv
+*.h5
+*.npz
+*.npy
+*.pkl
+*.pt
+*.mp4
+*.hdf5
+
+# Logs and reports
+*.log
+*.out
+*.err
+pip-log.txt
+pip-delete-this-directory.txt
+
+
+data/
+output/
+logs/
+results/
+neuraloperator/
+SWEMniCS/
+hai_transformer/
+PDEBench/
+wavelet_work/
+
+# Model checkpoints or caches
+checkpoints/
+*.pth
+*.ckpt
