@@ -15,6 +15,7 @@ venv/
 *.nb.html
 *.nbconvert.ipynb
 
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -28,6 +29,7 @@ Thumbs.db
 *.pt
 *.mp4
 *.hdf5
+*.git
 
 # Logs and reports
 *.log
@@ -36,6 +38,8 @@ Thumbs.db
 pip-log.txt
 pip-delete-this-directory.txt
 
+
+**/.git/
 DINo/
 data/
 output/
